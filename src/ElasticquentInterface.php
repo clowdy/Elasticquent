@@ -38,6 +38,21 @@ interface ElasticquentInterface
     public function usesTimestampsInIndex();
 
     /**
+     * Get Index relationships to eager load
+     *
+     * @return array
+     */
+    public function getIndexRelations();
+
+    /**
+     * Set Index relationships to eager load
+     *
+     * @param  array $relations
+     * @return void
+     */
+    public function setIndexRelations(array $relations);
+
+    /**
      * Get Mapping Properties
      *
      * @return array
@@ -47,10 +62,10 @@ interface ElasticquentInterface
     /**
      * Set Mapping Properties
      *
-     * @param   array $mappingProperties
-     * @return  void
+     * @param  array $mapping
+     * @return void
      */
-    public function setMappingProperties($mapping);
+    public function setMappingProperties(array $mapping);
 
     /**
      * Get Index Document Data
@@ -58,7 +73,7 @@ interface ElasticquentInterface
      * Get the data that ElasticSearch will
      * index for this particular document.
      *
-     * @return  array
+     * @return array
      */
     public function getIndexDocumentData();
 
@@ -67,8 +82,8 @@ interface ElasticquentInterface
      *
      * Index all documents in an Eloquent model.
      *
-     * @param   array $columns
-     * @return  void
+     * @param  array $columns
+     * @return void
      */
     public static function addAllToIndex();
 
@@ -110,10 +125,10 @@ interface ElasticquentInterface
      * Most Elasticsearch API calls need the index and
      * type passed in a parameter array.
      *
-     * @param     bool $getIdIfPossible
-     * @return    array
+     * @param  bool  $getIdIfPossible
+     * @return array
      */
-    function getBasicEsParams($getIdIfPossible = true);
+    public function getBasicEsParams($getIdIfPossible = true);
 
      /**
      * Is Elasticsearch Document
@@ -135,7 +150,7 @@ interface ElasticquentInterface
     /**
      * Put Mapping
      *
-     * @param     bool $ignoreConflicts
+     * @param bool $ignoreConflicts
      * @return
      */
     public static function putMapping($ignoreConflicts = false);
@@ -175,5 +190,4 @@ interface ElasticquentInterface
      * @return bool
      */
     public static function typeExists();
-
 }

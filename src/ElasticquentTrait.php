@@ -1,7 +1,10 @@
 <?php namespace Elasticquent;
 
-use \Elasticquent\ElasticquentCollection as ElasticquentCollection;
-use \Elasticquent\ElasticquentResultCollection as ResultCollection;
+use Elasticquent\ElasticquentCollection as ElasticquentCollection;
+use Elasticquent\ElasticquentResultCollection as ResultCollection;
+use Elasticsearch\Client as Elasticsearch;
+use Elasticquent\Exceptions\DocumentMissingException;
+use Config;
 
 /**
  * Elasticquent Trait
@@ -54,22 +57,18 @@ trait ElasticquentTrait
      */
     public function getElasticSearchClient()
     {
-        $config = array();
+        $config = Config::get('elasticquent.config', []);
 
-        if (\Config::has('elasticquent.config')) {
-            $config = \Config::get('elasticquent.config');
-        }
-
-        return new \Elasticsearch\Client($config);
+        return new Elasticsearch($config);
     }
 
     /**
      * New Collection
      *
-     * @param array $models
+     * @param  array      $models
      * @return Collection
      */
-    public function newCollection(array $models = array())
+    public function newCollection(array $models = [])
     {
         return new ElasticquentCollection($models);
     }
@@ -84,12 +83,8 @@ trait ElasticquentTrait
         // The first thing we check is if there
         // is an elasticquery config file and if there is a
         // default index.
-        if (\Config::has('elasticquent.default_index')) {
-            return \Config::get('elasticquent.default_index');
-        }
-
         // Otherwise we will just go with 'default'
-        return 'default';
+        return Config::get('elasticquent.default_index', 'default');
     }
 
     /**
@@ -133,22 +128,64 @@ trait ElasticquentTrait
     }
 
     /**
+     * Get Index relationships to eager load
+     *
+     * @return array
+     */
+    public function getIndexRelations()
+    {
+        return ($this->indexRelations) ?: [];
+    }
+
+    /**
+     * Set Index relationships to eager load
+     *
+     * @param array $relations
+     * @internal param array $indexRelations
+     */
+    public function setIndexRelations(array $relations)
+    {
+        $this->indexRelations = $relations;
+    }
+
+    /**
+     * Get query scopes for this model
+     *
+     * @return array
+     */
+    public function getQueryScopes()
+    {
+        return ($this->indexQueryScopes) ?: [];
+    }
+
+    /**
+     * Set query scopes for this model
+     *
+     * @param array $scopes
+     * @internal param array $indexQueryScopes
+     */
+    public function setQueryScopes(array $scopes)
+    {
+        $this->indexQueryScopes = $scopes;
+    }
+
+    /**
      * Get Mapping Properties
      *
      * @return array
      */
     public function getMappingProperties()
     {
-        return $this->mappingProperties;
+        return ($this->mappingProperties) ?: [];
     }
 
     /**
      * Set Mapping Properties
      *
-     * @param $mapping
+     * @param array $mapping
      * @internal param array $mappingProperties
      */
-    public function setMappingProperties($mapping)
+    public function setMappingProperties(array $mapping)
     {
         $this->mappingProperties = $mapping;
     }
@@ -192,7 +229,7 @@ trait ElasticquentTrait
      * Get the data that Elasticsearch will
      * index for this particular document.
      *
-     * @return  array
+     * @return array
      */
     public function getIndexDocumentData()
     {
@@ -201,32 +238,84 @@ trait ElasticquentTrait
 
     /**
      * Index Documents
-     *
      * Index all documents in an Eloquent model.
+     * Optional chunking for large data sets
      *
-     * @return  array
+     * @param int $chunk
+     *
+     * @return array
      */
-    public static function addAllToIndex()
+    public static function addAllToIndex($chunk = 0)
     {
-        $instance = new static;
+        $query = self::getQuery();
 
-        $all = $instance->newQuery()->get(array('*'));
+        if ($chunk) {
+            return $query->chunk($chunk, function ($data) {
+                $data->addToIndex();
+            });
+        }
 
-        return $all->addToIndex();
+        return $query->get()->addToIndex();
     }
 
     /**
      * Re-Index All Content
+     * Optional chunking for large data sets
+     *
+     * @param int $chunk
      *
      * @return array
      */
-    public static function reindex()
+    public static function reindex($chunk = 0)
     {
-        $instance = new static;
+        $query = self::getQuery();
 
-        $all = $instance->newQuery()->get(array('*'));
+        if ($chunk) {
+            return $query->chunk($chunk, function ($data) {
+                $data->reindex();
+            });
+        }
 
-        return $all->reindex();
+        return $query->get()->reindex();
+    }
+
+    /**
+     * Get new query builder instance
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    protected static function getQuery()
+    {
+        $instance = new static();
+
+        $query = $instance->newQuery()->with($instance->getIndexRelations());
+
+        foreach ($instance->getQueryScopes as $scope) {
+            $query->$scope();
+        }
+
+        return $query;
+    }
+
+    /**
+     * Build your own search
+     *
+     * @param  array            $params
+     * @param  int              $limit
+     * @param  int              $offset
+     * @return ResultCollection
+     */
+    public static function searchCustom($params = [], $limit = null, $offset = null)
+    {
+        $instance = new static();
+
+        $basicParams = $instance->getBasicEsParams(true, true, true, $limit, $offset);
+
+        $params = array_merge($basicParams, $params);
+
+        $result = $instance->getElasticSearchClient()->search($params);
+
+        return new ResultCollection($instance->hitsToItems($result), $result);
     }
 
     /**
@@ -234,16 +323,16 @@ trait ElasticquentTrait
      *
      * Search with a query array
      *
-     * @param   array $query
-     * @param   array $aggregations
-     * @param   array $sourceFields
-     * @param   int $limit
-     * @param   int $offset
-     * @return  ResultCollection
+     * @param  array            $query
+     * @param  array            $aggregations
+     * @param  array            $sourceFields
+     * @param  int              $limit
+     * @param  int              $offset
+     * @return ResultCollection
      */
     public static function searchByQuery($query = null, $aggregations = null, $sourceFields = null, $limit = null, $offset = null)
     {
-        $instance = new static;
+        $instance = new static();
 
         $params = $instance->getBasicEsParams(true, true, true, $limit, $offset);
 
@@ -261,7 +350,7 @@ trait ElasticquentTrait
 
         $result = $instance->getElasticSearchClient()->search($params);
 
-        return new ResultCollection($result, $instance = new static);
+        return new ResultCollection($instance->hitsToItems($result), $result);
     }
 
     /**
@@ -269,12 +358,12 @@ trait ElasticquentTrait
      *
      * Simple search using a match _all query
      *
-     * @param   string $term
-     * @return  ResultCollection
+     * @param  string           $term
+     * @return ResultCollection
      */
     public static function search($term = null)
     {
-        $instance = new static;
+        $instance = new static();
 
         $params = $instance->getBasicEsParams();
 
@@ -282,7 +371,7 @@ trait ElasticquentTrait
 
         $result = $instance->getElasticSearchClient()->search($params);
 
-        return new ResultCollection($result, $instance = new static);
+        return new ResultCollection($instance->hitsToItems($result), $result);
     }
 
     /**
@@ -293,8 +382,8 @@ trait ElasticquentTrait
      */
     public function addToIndex()
     {
-        if ( ! $this->exists) {
-            throw new Exception('Document does not exist.');
+        if (! $this->exists) {
+            throw new DocumentMissingException('Document does not exist.');
         }
 
         $params = $this->getBasicEsParams();
@@ -341,26 +430,26 @@ trait ElasticquentTrait
      * Most Elasticsearch API calls need the index and
      * type passed in a parameter array.
      *
-     * @param     bool $getIdIfPossible
-     * @param     bool $getSourceIfPossible
-     * @param     bool $getTimestampIfPossible
-     * @param     int $limit
-     * @param     int $offset
+     * @param bool $getIdIfPossible
+     * @param bool $getSourceIfPossible
+     * @param bool $getTimestampIfPossible
+     * @param int  $limit
+     * @param int  $offset
      *
-     * @return    array
+     * @return array
      */
     public function getBasicEsParams($getIdIfPossible = true, $getSourceIfPossible = false, $getTimestampIfPossible = false, $limit = null, $offset = null)
     {
-        $params = array(
+        $params = [
             'index'     => $this->getIndexName(),
             'type'      => $this->getTypeName()
-        );
+        ];
 
         if ($getIdIfPossible and $this->getKey()) {
             $params['id'] = $this->getKey();
         }
 
-        $fieldsParam = array();
+        $fieldsParam = [];
 
         if ($getSourceIfPossible) {
             array_push($fieldsParam, '_source');
@@ -392,7 +481,7 @@ trait ElasticquentTrait
      */
     public static function mappingExists()
     {
-        $instance = new static;
+        $instance = new static();
 
         $mapping = $instance->getMapping();
 
@@ -406,7 +495,7 @@ trait ElasticquentTrait
      */
     public static function getMapping()
     {
-        $instance = new static;
+        $instance = new static();
 
         $params = $instance->getBasicEsParams();
 
@@ -416,19 +505,19 @@ trait ElasticquentTrait
     /**
      * Put Mapping
      *
-     * @param    bool $ignoreConflicts
-     * @return   array
+     * @param  bool  $ignoreConflicts
+     * @return array
      */
     public static function putMapping($ignoreConflicts = false)
     {
-        $instance = new static;
+        $instance = new static();
 
         $mapping = $instance->getBasicEsParams();
 
-        $params = array(
-            '_source'       => array('enabled' => true),
+        $params = [
+            '_source'       => ['enabled' => true],
             'properties'    => $instance->getMappingProperties()
-        );
+        ];
 
         $mapping['body'][$instance->getTypeName()] = $params;
 
@@ -442,7 +531,7 @@ trait ElasticquentTrait
      */
     public static function deleteMapping()
     {
-        $instance = new static;
+        $instance = new static();
 
         $params = $instance->getBasicEsParams();
 
@@ -459,7 +548,7 @@ trait ElasticquentTrait
      */
     public static function rebuildMapping()
     {
-        $instance = new static;
+        $instance = new static();
 
         // If the mapping exists, let's delete it.
         if ($instance->mappingExists()) {
@@ -475,19 +564,15 @@ trait ElasticquentTrait
     /**
      * Create Index
      *
-     * @param int $shards
-     * @param int $replicas
+     * @param  int   $shards
+     * @param  int   $replicas
      * @return array
      */
     public static function createIndex($shards = null, $replicas = null)
     {
-        $instance = new static;
+        $instance = new static();
 
-        $client = $instance->getElasticSearchClient();
-
-        $index = array(
-            'index'     => $instance->getIndexName()
-        );
+        $index = ['index' => $instance->getIndexName()];
 
         if ($shards) {
             $index['body']['settings']['number_of_shards'] = $shards;
@@ -497,7 +582,37 @@ trait ElasticquentTrait
             $index['body']['settings']['number_of_replicas'] = $replicas;
         }
 
-        return $client->indices()->create($index);
+        return $instance->getElasticSearchClient()->indices()->create($index);
+    }
+
+    /**
+     * Delete Index
+     *
+     * @return array
+     */
+    public static function deleteIndex()
+    {
+        $instance = new static();
+
+        $index = ['index' => $instance->getIndexName()];
+
+        return $instance->getElasticSearchClient()->indices()->delete($index);
+    }
+
+    /**
+     * Index Exists
+     *
+     * Does this index exist?
+     *
+     * @return bool
+     */
+    public static function indexExists()
+    {
+        $instance = new static();
+
+        $params = ['index' => $instance->getIndexName()];
+
+        return $instance->getElasticSearchClient()->indices()->exists($params);
     }
 
     /**
@@ -509,11 +624,45 @@ trait ElasticquentTrait
      */
     public static function typeExists()
     {
-        $instance = new static;
+        $instance = new static();
 
         $params = $instance->getBasicEsParams();
 
-        return $instance->getElasticSearchClient()->indices()->existsType($params);
+        return $instance->getElasticSearchClient()->indices()->exists($params);
+    }
+
+    /**
+     * Optimize the elasticsearch index
+     *
+     * @param  array $params
+     * @return bool
+     */
+    public static function optimize(array $params = [])
+    {
+        $instance = new static();
+
+        $basicParams = ['index' => $instance->getIndexName()];
+
+        $params = array_merge($basicParams, $params);
+
+        return $instance->getElasticSearchClient()->indices()->optimize($params);
+    }
+
+    /**
+     * Hits To Items
+     *
+     * @param  Eloquent model instance $instance
+     * @return array
+     */
+    protected function hitsToItems(array $results)
+    {
+        $items = [];
+
+        foreach (array_get($results, 'hits.hits') as $hit) {
+            $items[] = $this->newFromHitBuilder($hit);
+        }
+
+        return $items;
     }
 
     /**
@@ -524,15 +673,21 @@ trait ElasticquentTrait
      * @param  array  $hit
      * @return static
      */
-    public function newFromHitBuilder($hit = array())
+    protected function newFromHitBuilder(array $hit = [])
     {
-        $instance = $this->newInstance(array(), true);
-
-        $attributes = $hit['_source'];
+        $instance = $this->newInstance([], true);
 
         // Add fields to attributes
         if (isset($hit['fields'])) {
             foreach ($hit['fields'] as $key => $value) {
+                $attributes[$key] = $value;
+            }
+        } else {
+            $attributes = array_get($hit, '_source');
+        }
+
+        if (isset($hit['highlight'])) {
+            foreach ($hit['highlight'] as $key => $value) {
                 $attributes[$key] = $value;
             }
         }
@@ -541,16 +696,14 @@ trait ElasticquentTrait
 
         // In addition to setting the attributes
         // from the index, we will set the score as well.
-        $instance->documentScore = $hit['_score'];
+        $instance->documentScore = array_get($hit, '_score');
 
         // This is now a model created
         // from an Elasticsearch document.
         $instance->isDocument = true;
 
-        // Set our document version if it's
-        if (isset($hit['_version'])) {
-            $instance->documentVersion = $hit['_version'];
-        }
+        // Set our document version
+        $instance->documentVersion = array_get($hit, '_version');
 
         return $instance;
     }

@@ -1,10 +1,12 @@
 <?php
 
-use \Illuminate\Database\Eloquent\Model as Eloquent;
+use Illuminate\Database\Eloquent\Model as Eloquent;
+use Elasticquent\ElasticquentInterface;
+use Elasticquent\ElasticquentTrait;
 
-class ElasticquentTraitTest extends PHPUnit_Framework_TestCase {
-
-    public $modelData = array('name' => 'Test Name');
+class ElasticquentTraitTest extends PHPUnit_Framework_TestCase
+{
+    public $modelData = ['name' => 'Test Name'];
 
     /**
      * Testing Model
@@ -13,7 +15,7 @@ class ElasticquentTraitTest extends PHPUnit_Framework_TestCase {
      */
     public function testingModel()
     {
-        $model = new TestModel;
+        $model = new TestModel();
         $model->fill($this->modelData);
 
         return $model;
@@ -43,13 +45,26 @@ class ElasticquentTraitTest extends PHPUnit_Framework_TestCase {
     }
 
     /**
+     * Testing Index relations Setup
+     */
+    public function testIndexRelationsSetup()
+    {
+        $model = $this->testingModel();
+
+        $relations = ['foo', 'bar'];
+
+        $model->setIndexRelations($relations);
+        $this->assertEquals($relations, $model->getIndexRelations());
+    }
+
+    /**
      * Testing Mapping Setup
      */
     public function testMappingSetup()
     {
         $model = $this->testingModel();
 
-        $mapping = array('foo' => 'bar');
+        $mapping = ['foo' => 'bar'];
 
         $model->setMappingProperties($mapping);
         $this->assertEquals($mapping, $model->getMappingProperties());
@@ -68,8 +83,7 @@ class ElasticquentTraitTest extends PHPUnit_Framework_TestCase {
         $custom = new CustomTestModel();
         $custom->fill($this->modelData);
 
-        $this->assertEquals(
-                array('foo' => 'bar'), $custom->getIndexDocumentData());
+        $this->assertEquals(['foo' => 'bar'], $custom->getIndexDocumentData());
     }
 
     /**
@@ -78,33 +92,33 @@ class ElasticquentTraitTest extends PHPUnit_Framework_TestCase {
     public function testDocumentNullStates()
     {
         $model = $this->testingModel();
-        
+
         $this->assertFalse($model->isDocument());
         $this->assertNull($model->documentScore());
     }
 
 }
 
-class TestModel extends Eloquent implements \Elasticquent\ElasticquentInterface {
+class TestModel extends Eloquent implements ElasticquentInterface
+{
+    use ElasticquentTrait;
 
-    use Elasticquent\ElasticquentTrait;
+    protected $fillable = ['name'];
 
-    protected $fillable = array('name');
-
-    function getTable()
+    public function getTable()
     {
         return 'testing';
     }
 }
 
-class CustomTestModel extends Eloquent implements \Elasticquent\ElasticquentInterface {
+class CustomTestModel extends Eloquent implements ElasticquentInterface
+{
+    use ElasticquentTrait;
 
-    use Elasticquent\ElasticquentTrait;
+    protected $fillable = ['name'];
 
-    protected $fillable = array('name');
-
-    function getIndexDocumentData()
+    public function getIndexDocumentData()
     {
-        return array('foo' => 'bar');
+        return ['foo' => 'bar'];
     }
 }

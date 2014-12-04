@@ -1,51 +1,35 @@
 <?php namespace Elasticquent;
 
-class ElasticquentResultCollection extends \Illuminate\Database\Eloquent\Collection
+use Illuminate\Database\Eloquent\Collection;
+
+class ElasticquentResultCollection extends Collection
 {
     protected $took;
     protected $timed_out;
     protected $shards;
     protected $hits;
     protected $aggregations = null;
+    protected $facets = null;
 
     /**
      * _construct
      *
-     * @param   $results elasticsearch results
+     * @param $results elasticsearch results
      * @param $instance
      * @return \Elasticquent\ElasticquentResultCollection
      */
-    public function __construct($results, $instance)
+    public function __construct(array $items = [], array $meta = [])
     {
+        $this->items        = $items;
+
         // Take our result data and map it
         // to some class properties.
-        $this->took         = $results['took'];
-        $this->timed_out    = $results['timed_out'];
-        $this->shards       = $results['_shards'];
-        $this->hits         = $results['hits'];
-        $this->aggregations = isset($results['aggregations']) ? $results['aggregations'] : array();
-
-        // Now we need to assign our hits to the
-        // items in the collection.
-        $this->items = $this->hitsToItems($instance);
-    }
-
-    /**
-     * Hits To Items
-     *
-     * @param   Eloquent model instance $instance
-     * @return  array
-     */
-    private function hitsToItems($instance)
-    {
-        $items = array();
-
-        foreach ($this->hits['hits'] as $hit) {
-
-            $items[] = $instance->newFromHitBuilder($hit);
-        }
-
-        return $items;
+        $this->took         = array_get($meta, 'took');
+        $this->timed_out    = array_get($meta, 'timed_out');
+        $this->shards       = array_get($meta, '_shards');
+        $this->hits         = array_get($meta, 'hits');
+        $this->aggregations = array_get($meta, 'aggregations', []);
+        $this->facets       = array_get($meta, 'facets', []);
     }
 
     /**
@@ -95,14 +79,11 @@ class ElasticquentResultCollection extends \Illuminate\Database\Eloquent\Collect
      */
     public function timedOut()
     {
-        return (bool)$this->timed_out;
+        return (bool) $this->timed_out;
     }
 
     /**
      * Get Hits
-     *
-     * Get the raw hits array from
-     * Elasticsearch results.
      *
      * @return array
      */
@@ -114,9 +95,6 @@ class ElasticquentResultCollection extends \Illuminate\Database\Eloquent\Collect
     /**
      * Get aggregations
      *
-     * Get the raw hits array from
-     * Elasticsearch results.
-     *
      * @return array
      */
     public function getAggregations()
@@ -124,4 +102,13 @@ class ElasticquentResultCollection extends \Illuminate\Database\Eloquent\Collect
         return $this->aggregations;
     }
 
+    /**
+     * Get facets
+     *
+     * @return array
+     */
+    public function getFacets()
+    {
+        return $this->facets;
+    }
 }
