@@ -13,10 +13,10 @@
         }
     ],
     "require": {
-        "php": ">=5.4.0",
-        "illuminate/support": "~4.2",
-        "illuminate/database": "~4.2",
-        "nesbot/carbon": "~1.0",
+        "php": ">=5.5.9",
+        "illuminate/support": "5.1.*",
+        "illuminate/database": "5.1.*",
+        "nesbot/carbon": "~1.19",
         "elasticsearch/elasticsearch": "~1.0"
     },
     "require-dev": {

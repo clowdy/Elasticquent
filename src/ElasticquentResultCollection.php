@@ -1,4 +1,6 @@
-<?php namespace Elasticquent;
+<?php
+
+namespace Elasticquent;
 
 use Illuminate\Database\Eloquent\Collection;
 
@@ -11,7 +13,7 @@ class ElasticquentResultCollection extends Collection
     protected $aggregations = null;
 
     /**
-     * _construct
+     * _construct.
      *
      * @param $results elasticsearch results
      * @param $instance
@@ -19,19 +21,19 @@ class ElasticquentResultCollection extends Collection
      */
     public function __construct(array $items = [], array $meta = [])
     {
-        $this->items        = $items;
+        $this->items = $items;
 
         // Take our result data and map it
         // to some class properties.
-        $this->took         = array_get($meta, 'took');
-        $this->timed_out    = array_get($meta, 'timed_out');
-        $this->shards       = array_get($meta, '_shards');
-        $this->hits         = array_get($meta, 'hits');
+        $this->took = array_get($meta, 'took');
+        $this->timed_out = array_get($meta, 'timed_out');
+        $this->shards = array_get($meta, '_shards');
+        $this->hits = array_get($meta, 'hits');
         $this->aggregations = array_get($meta, 'aggregations', []);
     }
 
     /**
-     * Total Hits
+     * Total Hits.
      *
      * @return int
      */
@@ -41,7 +43,7 @@ class ElasticquentResultCollection extends Collection
     }
 
     /**
-     * Max Score
+     * Max Score.
      *
      * @return float
      */
@@ -51,7 +53,7 @@ class ElasticquentResultCollection extends Collection
     }
 
     /**
-     * Get Shards
+     * Get Shards.
      *
      * @return array
      */
@@ -61,7 +63,7 @@ class ElasticquentResultCollection extends Collection
     }
 
     /**
-     * Took
+     * Took.
      *
      * @return string
      */
@@ -71,7 +73,7 @@ class ElasticquentResultCollection extends Collection
     }
 
     /**
-     * Timed Out
+     * Timed Out.
      *
      * @return bool
      */
@@ -81,7 +83,7 @@ class ElasticquentResultCollection extends Collection
     }
 
     /**
-     * Get Hits
+     * Get Hits.
      *
      * @return array
      */
@@ -91,7 +93,7 @@ class ElasticquentResultCollection extends Collection
     }
 
     /**
-     * Get aggregations
+     * Get aggregations.
      *
      * @return array
      */

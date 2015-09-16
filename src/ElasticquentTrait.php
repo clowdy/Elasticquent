@@ -1,12 +1,13 @@
-<?php namespace Elasticquent;
+<?php
+
+namespace Elasticquent;
 
 use Elasticquent\ElasticquentResultCollection as ResultCollection;
 use Elasticsearch\Client as Elasticsearch;
 use Elasticquent\Exceptions\DocumentMissingException;
-use Config;
 
 /**
- * Elasticquent Trait
+ * Elasticquent Trait.
  *
  * Functionality extensions for Elequent that
  * makes working with Elasticsearch easier.
@@ -14,14 +15,14 @@ use Config;
 trait ElasticquentTrait
 {
     /**
-     * Uses Timestamps In Index
+     * Uses Timestamps In Index.
      *
      * @var bool
      */
     protected $usesTimestampsInIndex = true;
 
     /**
-     * Is ES Document
+     * Is ES Document.
      *
      * Set to true when our model is
      * populated by a
@@ -31,7 +32,7 @@ trait ElasticquentTrait
     protected $isDocument = false;
 
     /**
-     * Document Score
+     * Document Score.
      *
      * Hit score when using data
      * from Elasticsearch results.
@@ -41,7 +42,7 @@ trait ElasticquentTrait
     protected $documentScore = null;
 
     /**
-     * Document Version
+     * Document Version.
      *
      * Elasticsearch document version.
      *
@@ -50,19 +51,19 @@ trait ElasticquentTrait
     protected $documentVersion = null;
 
     /**
-     * Get ElasticSearch Client
+     * Get ElasticSearch Client.
      *
      * @return \Elasticsearch\Client
      */
     public function getElasticSearchClient()
     {
-        $config = Config::get('elasticquent.config', []);
+        $config = config('elasticquent.config', []);
 
         return new Elasticsearch($config);
     }
 
     /**
-     * New Collection
+     * New Collection.
      *
      * @param  array      $models
      * @return Collection
@@ -73,7 +74,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Get Index Name
+     * Get Index Name.
      *
      * @return string
      */
@@ -83,11 +84,11 @@ trait ElasticquentTrait
         // is an elasticquery config file and if there is a
         // default index.
         // Otherwise we will just go with 'default'
-        return Config::get('elasticquent.default_index', 'default');
+        return config('elasticquent.default_index', 'default');
     }
 
     /**
-     * Get Type Name
+     * Get Type Name.
      *
      * @return string
      */
@@ -97,7 +98,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Uses Timestamps In Index
+     * Uses Timestamps In Index.
      *
      * @return void
      */
@@ -107,7 +108,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Use Timestamps In Index
+     * Use Timestamps In Index.
      *
      * @return void
      */
@@ -117,7 +118,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Don't Use Timestamps In Index
+     * Don't Use Timestamps In Index.
      *
      * @return void
      */
@@ -127,7 +128,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Get Index relationships to eager load
+     * Get Index relationships to eager load.
      *
      * @return array
      */
@@ -137,7 +138,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Set Index relationships to eager load
+     * Set Index relationships to eager load.
      *
      * @param array $relations
      * @internal param array $indexRelations
@@ -148,7 +149,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Get query scopes for this model
+     * Get query scopes for this model.
      *
      * @return array
      */
@@ -158,7 +159,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Set query scopes for this model
+     * Set query scopes for this model.
      *
      * @param array $scopes
      * @internal param array $indexQueryScopes
@@ -169,7 +170,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Get Mapping Properties
+     * Get Mapping Properties.
      *
      * @return array
      */
@@ -179,7 +180,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Set Mapping Properties
+     * Set Mapping Properties.
      *
      * @param array $mapping
      * @internal param array $mappingProperties
@@ -190,7 +191,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Is Elasticsearch Document
+     * Is Elasticsearch Document.
      *
      * Is the data in this module sourced
      * from an Elasticsearch document source?
@@ -203,7 +204,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Get Document Score
+     * Get Document Score.
      *
      * @return null|float
      */
@@ -213,7 +214,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Document Version
+     * Document Version.
      *
      * @return null|int
      */
@@ -223,7 +224,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Get Index Document Data
+     * Get Index Document Data.
      *
      * Get the data that Elasticsearch will
      * index for this particular document.
@@ -238,7 +239,7 @@ trait ElasticquentTrait
     /**
      * Index Documents
      * Index all documents in an Eloquent model.
-     * Optional chunking for large data sets
+     * Optional chunking for large data sets.
      *
      * @param int $chunk
      *
@@ -259,7 +260,7 @@ trait ElasticquentTrait
 
     /**
      * Re-Index All Content
-     * Optional chunking for large data sets
+     * Optional chunking for large data sets.
      *
      * @param int $chunk
      *
@@ -279,7 +280,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Get new query builder instance
+     * Get new query builder instance.
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
@@ -297,7 +298,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Build your own search
+     * Build your own search.
      *
      * @param  array            $params
      * @param  int              $limit
@@ -318,7 +319,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Search By Query
+     * Search By Query.
      *
      * Search with a query array
      *
@@ -353,7 +354,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Search
+     * Search.
      *
      * Simple search using a match _all query
      *
@@ -376,14 +377,14 @@ trait ElasticquentTrait
     }
 
     /**
-     * Add to Search Index
+     * Add to Search Index.
      *
      * @throws Exception
      * @return array
      */
     public function addToIndex()
     {
-        if (! $this->exists) {
+        if (!$this->exists) {
             throw new DocumentMissingException('Document does not exist.');
         }
 
@@ -403,7 +404,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Remove From Search Index
+     * Remove From Search Index.
      *
      * @return array
      */
@@ -413,7 +414,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Get Search Document
+     * Get Search Document.
      *
      * Retrieve an ElasticSearch document
      * for this enty.
@@ -426,7 +427,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Get Basic Elasticsearch Params
+     * Get Basic Elasticsearch Params.
      *
      * Most Elasticsearch API calls need the index and
      * type passed in a parameter array.
@@ -461,7 +462,7 @@ trait ElasticquentTrait
         }
 
         if ($fieldsParam) {
-            $params['fields'] = implode(",", $fieldsParam);
+            $params['fields'] = implode(',', $fieldsParam);
         }
 
         if (is_numeric($limit)) {
@@ -476,7 +477,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Mapping Exists
+     * Mapping Exists.
      *
      * @return bool
      */
@@ -490,7 +491,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Get Mapping
+     * Get Mapping.
      *
      * @return void
      */
@@ -504,7 +505,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Put Mapping
+     * Put Mapping.
      *
      * @param  bool  $ignoreConflicts
      * @return array
@@ -527,7 +528,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Delete Mapping
+     * Delete Mapping.
      *
      * @return array
      */
@@ -541,7 +542,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Rebuild Mapping
+     * Rebuild Mapping.
      *
      * This will delete and then re-add
      * the mapping for this model.
@@ -564,7 +565,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Create Index
+     * Create Index.
      *
      * @param  int   $shards
      * @param  int   $replicas
@@ -588,7 +589,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Delete Index
+     * Delete Index.
      *
      * @return array
      */
@@ -602,7 +603,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Index Exists
+     * Index Exists.
      *
      * Does this index exist?
      *
@@ -618,7 +619,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Type Exists
+     * Type Exists.
      *
      * Does this type exist?
      *
@@ -634,7 +635,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Optimize the elasticsearch index
+     * Optimize the elasticsearch index.
      *
      * @param  array $params
      * @return bool
@@ -651,7 +652,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * Hits To Items
+     * Hits To Items.
      *
      * @param  Eloquent model instance $instance
      * @return array
@@ -668,7 +669,7 @@ trait ElasticquentTrait
     }
 
     /**
-     * New From Hit Builder
+     * New From Hit Builder.
      *
      * Variation on newFromBuilder. Instead, takes
      *
