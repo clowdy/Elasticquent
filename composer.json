@@ -31,5 +31,8 @@
         "branch-alias": {
             "dev-master": "1.0-dev"
         }
+    },
+    "suggest": {
+        "jsq/amazon-es-php": "Add support for AWS Elasticsearch service using IAM authentication with the official Elasticsearch PHP client."
     }
 }
