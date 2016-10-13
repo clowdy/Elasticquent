@@ -90,6 +90,20 @@ trait ElasticquentCollectionTrait
     {
         $config = config('elasticquent.config', []);
 
-        return new Elasticsearch($config);
+        // elasticsearch v2.0 using builder
+        if (class_exists('\Elasticsearch\ClientBuilder')) {
+            if (($aws = config('elasticquent.aws')) &&
+                config('elasticquent.aws.enabled') &&
+                class_exists('\Aws\ElasticsearchService\ElasticsearchPhpHandler')
+            ) {
+                $handler = new \Aws\ElasticsearchService\ElasticsearchPhpHandler(array_get($aws, 'region'));
+                array_set($config, 'handler', $handler);
+            }
+
+            return \Elasticsearch\ClientBuilder::fromConfig($config);
+        }
+
+        // elasticsearch v1
+        return new \Elasticsearch\Client($config);
     }
 }
