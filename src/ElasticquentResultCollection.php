@@ -39,7 +39,7 @@ class ElasticquentResultCollection extends Collection
      */
     public function totalHits()
     {
-        return $this->hits['total'];
+        return (int) array_get($this->hits, 'total', 0);
     }
 
     /**
@@ -49,7 +49,7 @@ class ElasticquentResultCollection extends Collection
      */
     public function maxScore()
     {
-        return $this->hits['max_score'];
+        return (float) array_get($this->hits, 'max_score', 0);
     }
 
     /**
